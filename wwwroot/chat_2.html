@@ -1,0 +1,313 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title></title>
+    <style type="text/css">
+        body, html {
+            overscroll-behavior-y: contain;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        body {
+            font-family: Tahoma;
+            font-size: 1.6rem;
+            background-color: #FCFDFD;
+            margin: 0;
+            overflow: hidden;
+        }
+
+        .container {
+            display: flex;
+            background: rgb(223, 225, 230);
+            align-items: center;
+            background-position: 50%;
+            flex: 1 1;
+            flex-direction: column;
+            inset: 0;
+            overflow: hidden;
+            position: absolute;
+            width: 100%;
+            z-index: 3;
+            transition: color, background-color .2s ease-out;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+            outline: none;
+            touch-action: pan-x pan-y;
+            unicode-bidi: isolate;
+            direction: rtl;
+        }
+
+        .appbar {
+            box-shadow: var(--option-modal-shadow);
+            box-sizing: border-box;
+            padding: 4px 6px;
+            position: relative;
+            width: 100%;
+            z-index: 3;
+            background-color: #FAFBFC;
+            border-bottom: 1px solid #EBECF0;
+            transition: color, background-color .2s ease-out;
+            -webkit-tap-highlight-color: transparent;
+            outline: none;
+            touch-action: pan-x pan-y;
+            direction: rtl;
+        }
+
+        .appbar-base {
+            align-items: center;
+            cursor: pointer;
+            display: flex;
+            gap: 8px;
+            justify-content: space-between;
+            min-height: 48px;
+            transition: color, background-color .2s ease-out;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+            outline: none;
+            touch-action: pan-x pan-y;
+            unicode-bidi: isolate;
+            direction: rtl;
+        }
+
+        .appbar-avatar-box {
+            width: 44px;
+            height: 44px;
+            cursor: pointer;
+            flex-shrink: 0;
+            margin: 0;
+            position: relative;
+            transition: color, background-color .2s ease-out;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+            outline: none;
+            touch-action: pan-x pan-y;
+            display: block;
+            unicode-bidi: isolate;
+        }
+
+        .appbar-avatar-box-wrapper {
+            width: 44px;
+            height: 44px;
+            align-items: center;
+            display: flex;
+            justify-content: center;
+            transition: color, background-color .2s ease-out;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+            outline: none;
+            touch-action: pan-x pan-y;
+        }
+
+        .appbar-avatar {
+            width: 44px;
+            height: 44px;
+            display: block;
+            border-radius: 50%;
+            object-fit: cover;
+            transition: opacity .8s;
+            -webkit-user-drag: none;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+            outline: none;
+            touch-action: pan-x pan-y;
+        }
+
+        .appbar-peer-info {
+            display: flex;
+            flex: 1 1;
+            flex-direction: column;
+            overflow: hidden;
+            transition: color, background-color .2s ease-out;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+            outline: none;
+            touch-action: pan-x pan-y;
+            unicode-bidi: isolate;
+        }
+
+        .appbar-peer-info-name {
+            align-items: center;
+            align-self: start;
+            color: #091E42;
+            display: flex;
+            font-family: Shabnam;
+            font-size: 1.6rem;
+            font-weight: 500;
+            gap: 2px;
+            line-height: 2.4rem;
+            margin: 0;
+            width: 100%;
+            transition: color, background-color .2s ease-out;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+            outline: none;
+            touch-action: pan-x pan-y;
+        }
+
+        .appbar-peer-info-name-text {
+            margin: 0;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            transition: color, background-color .2s ease-out;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+            outline: none;
+            touch-action: pan-x pan-y;
+        }
+
+        .appbar-buttons {
+            display: flex;
+            flex-shrink: 0;
+            transition: color, background-color .2s ease-out;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+            outline: none;
+            touch-action: pan-x pan-y;
+        }
+
+        .appbar-pin-container {
+            align-items: flex-end;
+            background-color: #FAFBFC;
+            bottom: 0;
+            box-shadow: 0 1px 4px rgba( 9, 30, 66, .08);
+            display: flex;
+            flex-direction: column;
+            left: 0;
+            position: absolute;
+            transform: translateY(100%);
+            width: 100%;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+            outline: none;
+            touch-action: pan-x pan-y;
+        }
+
+        .msg-list {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            justify-content: flex-end;
+            overflow: hidden;
+            position: relative;
+            width: 100%;
+            transition: color, background-color .2s ease-out;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+            outline: none;
+            touch-action: pan-x pan-y;
+            unicode-bidi: isolate;
+            direction: rtl;
+        }
+
+        .msg-list-scroller {
+            direction: ltr;
+            height: -webkit-fit-content;
+            height: -moz-fit-content;
+            height: fit-content;
+            padding-bottom: 3rem;
+            width: 100%;
+            overflow: hidden auto;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+            outline: none;
+            touch-action: pan-x pan-y;
+        }
+
+        .footbar {
+            align-items: center;
+            background-color: transparent;
+            direction: ltr;
+            flex-direction: column;
+            position: relative;
+            width: 100%;
+            z-index: 2;
+            transition: color, background-color .2s ease-out;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+            outline: none;
+            touch-action: pan-x pan-y;
+            display: block;
+            unicode-bidi: isolate;
+        }
+
+        .footbar-input-bar {
+            align-items: center;
+            background-color: #FCFDFD;
+            display: flex;
+            flex-shrink: 0;
+            min-height: 54px;
+            padding: 0 1.2rem;
+            position: relative;
+            user-select: none;
+            -webkit-user-select: none;
+            width: 100%;
+            z-index: 1;
+            transition: color, background-color .2s ease-out;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+            outline: none;
+            touch-action: pan-x pan-y;
+        }
+
+        @media screen and (min-width: 576px) {
+            .footbar-input-bar {
+                gap: .4rem;
+                padding: .8rem 1.6rem;
+            }
+        }
+
+        @media screen and (min-width: 768px) {
+            .container {
+                animation: none !important;
+                display: flex !important;
+                position: relative !important;
+                transform: none !important;
+                z-index: auto !important;
+            }
+        }
+
+        @media screen and (min-width: 768px) {
+            .appbar {
+                padding: 6px 12px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="appbar" aria-label="App Bar">
+            <div class="appbar-base">
+                <div class="appbar-avatar-box">
+                    <div class="appbar-avatar-box-wrapper">
+                        <img class="appbar-avatar" src="blob:https://web.bale.ai/32fdc413-3c9e-49bc-bfd4-6d986803c744" role="img">
+                    </div>
+                </div>
+                <div class="appbar-peer-info">
+                    <div class="appbar-peer-info-name">
+                        <div class="appbar-peer-info-name-text">
+                            <p class="appbar-peer-info-name-text">دبیرخانه توسعه عصر</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="appbar-buttons">
+
+                </div>
+            </div>
+            <div class="appbar-pin-container" id="toolbar-pin-container"></div>
+        </div>
+        <div class="msg-list" aria-label="Message List">
+            <div class="msg-list-scroller">
+
+            </div>
+        </div>
+        <div class="footbar" aria-label="Foot Bar">
+            <div class="footbar-input-bar">
+
+            </div>
+        </div>
+    </div>
+</body>
+</html>

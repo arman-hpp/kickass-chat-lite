@@ -1,0 +1,132 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <title>Kickass Chat</title>
+    <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,shrink-to-fit=no,viewport-fit=cover" />
+    <style type="text/css">
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        html, body {
+            height: 100%;
+            font-family: sans-serif;
+            background-color: #FCFDFD;
+            overflow: hidden;
+        }
+
+        .container {
+            max-width: 400px;
+            margin: auto;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            margin-top: 20px;
+        }
+
+        h2 {
+            text-align: center;
+            margin-bottom: 20px;
+            color: #333;
+        }
+
+        input[type="text"], input[type="password"] {
+            padding: 12px;
+            font-size: 16px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            margin-bottom: 10px;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        button {
+            padding: 12px;
+            font-size: 16px;
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background 0.3s ease;
+        }
+
+            button:hover {
+                background: #0056b3;
+            }
+
+        .alert {
+            background: #ffe0e0;
+            color: #b30000;
+            padding: 15px;
+            margin-top: 12px;
+            border-radius: 6px;
+            font-size: 14px;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>Kickass Chat Login</h2>
+        <input type="text" id="userName" placeholder="Username" />
+        <input type="text" id="roomName" placeholder="Room Name" />
+        <input type="password" id="roomKey" placeholder="Room Key" />
+        <button onclick="login()">Login</button>
+        <div class="alert" id="errorBox"></div>
+    </div>
+<script>
+    document.querySelectorAll("input").forEach(input => {
+        input.addEventListener("input", () => {
+            errorBox.style.display = 'none';
+        });
+    });
+
+    function showError(err, element) {
+        errorBox.style.display = 'block';
+        errorBox.textContent = err;
+        if(element)
+            element.focus();
+        return 0;
+    }
+
+    function login() {
+        const usernameElement = document.getElementById("userName");
+        const username = usernameElement.value.trim();
+        if(!username)
+            return showError("Please enter Username.", usernameElement);
+        
+        const roomNameElement = document.getElementById("roomName");
+        const roomName = roomNameElement.value.trim();
+        if(!roomName)
+            return showError("Please enter Room Name.", roomNameElement);
+        
+        const roomKeyElement = document.getElementById("roomKey");
+        const roomKey = roomKeyElement.value;
+        if (!roomKey)
+            return showError("Please enter Room Key.", roomKeyElement);
+
+        fetch('/auth/Login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ userName: username, roomName: roomName, roomKey: roomKey })
+        })
+        .then(res => {
+            if (!res.ok) throw new Error("Login failed.");
+            return res.json();
+        })
+        .then(data => {
+            localStorage.setItem("chat-token", data.token);
+            window.location.href = "chat.html";
+        })
+        .catch(err => {
+            showError(err.message);
+        });   
+    }
+</script>
+</body>
+</html>
