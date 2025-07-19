@@ -3,6 +3,9 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,shrink-to-fit=no,viewport-fit=cover" />
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+    <meta http-equiv="Pragma" content="no-cache" />
+    <meta http-equiv="Expires" content="0" />
     <title>Kickass Chat</title>
     <style type="text/css">
         * {
@@ -55,9 +58,9 @@
             transition: background 0.3s ease;
         }
 
-        button:hover {
-            background: #0056b3;
-        }
+            button:hover {
+                background: #0056b3;
+            }
 
         .alert {
             background: #ffe0e0;
@@ -124,7 +127,7 @@
             return res.json();
         }).then(data => {
             localStorage.setItem("chat-token", data.token);
-            window.location.href = "chat.html";
+            window.location.href = "chat.html?timestamp=" + new Date().getTime();;
         }).catch(err => {
             showError(err.message);
         });

@@ -3,6 +3,9 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,shrink-to-fit=no,viewport-fit=cover" />
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+    <meta http-equiv="Pragma" content="no-cache" />
+    <meta http-equiv="Expires" content="0" />
     <title>Kickass Chat</title>
     <script src="signalr.min.js"></script>
     <script type="module" src="https://cdn.jsdelivr.net/npm/emoji-picker-element@^1/index.js"></script>
@@ -335,7 +338,7 @@
                 <button id="emojiBtn" style="font-size: 20px; padding: 0 8px;">😊</button>
                 <div id="messageInput" contenteditable="true" placeholder="Write your message" class="editable"></div>
                 <emoji-picker id="emojiPicker" style="position: absolute; bottom: 60px; right: 12px; display: none; z-index: 999;"></emoji-picker>
-                <button id="sendBtn" onmousedown="event.preventDefault()" onclick="sendMessage()">Send</button>
+                <button id="sendBtn">Send</button>
             </div>
         </footer>
     </div>
@@ -379,6 +382,12 @@
 
             input.addEventListener("input", saveRange);
 
+            input.addEventListener('click', () => {
+                if (isEmojiPanelOpen()) {
+                    removeEmojiPanel();
+                }
+            });
+
             emojiPicker.addEventListener("click", e => {
                 e.stopPropagation();
             });
@@ -390,20 +399,28 @@
 
             emojiBtn.addEventListener("click", (e) => {
                 e.stopPropagation();
-
                 if (isEmojiPanelOpen()) {
                     removeEmojiPanel();
                 } else {
-                    input.blur();
-                    setTimeout(() => {
-                        showEmojiPicker();
-                    }, 100);
+                    showEmojiPicker();
                 }
             });
 
-            window.addEventListener("resize", () => {
-                removeEmojiPanel();
+            sendBtn.addEventListener("click", (e) => {
+                e.preventDefault();
+                sendMessage();
             });
+
+            sendBtn.addEventListener("mousedown", e => {
+                if (!isEmojiPanelOpen()) {
+                    e.preventDefault();
+                }
+            });
+
+            //window.addEventListener("resize", () => {
+            //    if (!isMobileView())
+            //        removeEmojiPanel();
+            //});
 
             focusOnElement(input);
         });
@@ -445,9 +462,7 @@
                     .finally(() => {
                         if (isEmojiPanelOpen())
                             removeSelection();
-                        input.innerText = '';
-                        //input.innerHTML = '';
-                        //savedRange = null;
+                        input.innerHTML = '';
                     });
             }
         }
@@ -468,14 +483,12 @@
                 emojiPicker.style.left = "0";
                 emojiPicker.style.width = "100%";
                 emojiPicker.style.height = "300px";
-
                 document.body.classList.add("emoji-open");
             } else {
                 emojiPicker.style.position = "absolute";
                 const rect = emojiBtn.getBoundingClientRect();
                 emojiPicker.style.left = `${rect.left}px`;
                 emojiPicker.style.top = `${rect.top - emojiPicker.offsetHeight - 8}px`;
-
                 document.body.classList.remove("emoji-open");
             }
 
@@ -491,10 +504,11 @@
         }
 
         function handleOutsideClick(e) {
-            if (![emojiPicker, emojiBtn, sendBtn].some(el => el.contains(e.target))) {
+            if (![emojiPicker, emojiBtn, sendBtn, input].some(el => el.contains(e.target))) {
                 removeEmojiPanel();
             }
         }
+
         function redirectToLogin() {
             window.location.href = "index.html";
         }
@@ -504,7 +518,7 @@
         }
 
         function setRoomName(name) {
-            document.getElementById('roomName').innerText = name;
+            document.getElementById('roomName').innerHTML = name;
         }
 
         function isEmojiPanelOpen() {
@@ -525,7 +539,7 @@
             const msg = document.createElement('div');
             msg.className = `message ${sender}`;
             msg.innerHTML = `<strong>${userName}</strong> <span class="time">[${time}]</span>: ${message}`;
-            chat.prepend(msg); //chat.insertBefore(msg, chat.firstChild);
+            chat.prepend(msg); //old: chat.insertBefore(msg, chat.firstChild);
             chat.scrollTop = chat.scrollHeight;
         }
 
@@ -540,11 +554,9 @@
 
         function insertEmojiAtCursor(emoji) {
             const selection = window.getSelection();
-
             if (savedRange) {
                 selection.removeAllRanges();
                 selection.addRange(savedRange);
-
                 const range = selection.getRangeAt(0);
                 range.deleteContents();
                 const textNode = document.createTextNode(emoji);
@@ -559,6 +571,40 @@
                 document.execCommand('insertText', false, emoji);
             }
         }
+
+        (function () {
+            if (!window.visualViewport) {
+                console.warn("visualViewport not supported on this browser");
+                return;
+            }
+
+            let lastVVWidth = window.visualViewport.width;
+            let lastVVHeight = window.visualViewport.height;
+
+            window.visualViewport.addEventListener("resize", () => {
+                const currVVWidth = window.visualViewport.width;
+                const currVVHeight = window.visualViewport.height;
+
+                const heightDiff = lastVVHeight - currVVHeight;
+                const widthChanged = currVVWidth !== lastVVWidth;
+                const heightChanged = currVVHeight !== lastVVHeight;
+
+                if (widthChanged) {
+                    console.log("✅ Real resize (orientation or layout change)");
+                    removeEmojiPanel();
+                } else if (heightChanged && heightDiff > 100) {
+                    console.log("🟡 Likely keyboard opened (height dropped significantly)");
+                } else if (heightChanged && heightDiff < -100) {
+                    console.log("🟢 Likely keyboard closed (height increased)");
+                } else {
+                    console.log("🟡 Minor viewport shift, ignoring...");
+                }
+
+                lastVVWidth = currVVWidth;
+                lastVVHeight = currVVHeight;
+            });
+        })();
+
     </script>
 </body>
 </html>
