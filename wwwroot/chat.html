@@ -5,11 +5,15 @@
     <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,shrink-to-fit=no,viewport-fit=cover" />
     <title>Kickass Chat</title>
     <script src="signalr.min.js"></script>
+    <script type="module" src="https://cdn.jsdelivr.net/npm/emoji-picker-element@^1/index.js"></script>
     <style type="text/css">
         * {
             box-sizing: border-box;
             margin: 0;
             padding: 0;
+            -webkit-tap-highlight-color: transparent;
+            outline: none;
+            touch-action: pan-x pan-y;
         }
 
         html, body {
@@ -156,6 +160,7 @@
             display: flex;
             flex-direction: column;
             min-height: 0;
+            align-items: center;
         }
 
         .message-list {
@@ -168,6 +173,14 @@
             display: flex;
             flex-direction: column-reverse;
             gap: 8px;
+            width: 100%;
+            max-width: 800px;
+        }
+
+        @media (max-width: 768px) {
+            .message-list {
+                max-width: 100%;
+            }
         }
 
         .message {
@@ -215,6 +228,7 @@
             -o-align-items: center;
             -webkit-align-items: center;
             align-items: center;
+            justify-content: center;
         }
 
         .chat-input-wrapper {
@@ -223,6 +237,14 @@
             -webkit-flex-grow: 1;
             flex-grow: 1;
             gap: 8px;
+            width: 100%;
+            max-width: 800px;
+        }
+
+        @media (max-width: 768px) {
+            .chat-input-wrapper {
+                max-width: 100%;
+            }
         }
 
         .editable {
@@ -246,12 +268,12 @@
             -webkit-overflow-scrolling: touch;
         }
 
-        .editable:empty:before {
-            content: attr(placeholder);
-            color: #aaa;
-            pointer-events: none;
-            display: block;
-        }
+            .editable:empty:before {
+                content: attr(placeholder);
+                color: #aaa;
+                pointer-events: none;
+                display: block;
+            }
 
         button {
             -webkit-tap-highlight-color: transparent;
@@ -269,8 +291,19 @@
             height: 36px;
         }
 
-        button:hover {
-            background-color: #1565c0;
+            button:hover {
+                background-color: #1565c0;
+            }
+
+        body.emoji-open .footer {
+            margin-bottom: 300px;
+        }
+
+        emoji-picker#emojiPicker {
+            z-index: 999;
+            border-top: 1px solid #ccc;
+            box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
+            background-color: white;
         }
     </style>
 </head>
@@ -280,7 +313,7 @@
             <div class="appbar-base">
                 <div class="appbar-avatar-box">
                     <div class="appbar-avatar-box-wrapper">
-                        <img class="appbar-avatar" src="data:image/png;base64,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" role="img" alt="avatar"/>
+                        <img class="appbar-avatar" src="data:image/png;base64,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" role="img" alt="avatar" />
                     </div>
                 </div>
                 <div class="appbar-peer-info">
@@ -299,111 +332,233 @@
         </main>
         <footer class="footer">
             <div class="chat-input-wrapper">
+                <button id="emojiBtn" style="font-size: 20px; padding: 0 8px;">😊</button>
                 <div id="messageInput" contenteditable="true" placeholder="Write your message" class="editable"></div>
-                <button onmousedown="event.preventDefault()" onclick="sendMessage()">Send</button>
+                <emoji-picker id="emojiPicker" style="position: absolute; bottom: 60px; right: 12px; display: none; z-index: 999;"></emoji-picker>
+                <button id="sendBtn" onmousedown="event.preventDefault()" onclick="sendMessage()">Send</button>
             </div>
         </footer>
     </div>
 
-<script>
-    const chat = document.getElementById('chat');
-    const input = document.getElementById('messageInput');
+    <script type="module">
+        const chat = document.getElementById('chat');
+        const input = document.getElementById('messageInput');
+        const sendBtn = document.getElementById("sendBtn");
+        const emojiBtn = document.getElementById("emojiBtn");
+        const emojiPicker = document.getElementById("emojiPicker");
+        let savedRange = null;
+        let connection = null;
 
-    (function init() {
-        const token = localStorage.getItem("chat-token");
-        if (!token)
-            return redirectToLogin();
+        document.addEventListener('DOMContentLoaded', async () => {
+            const token = localStorage.getItem("chat-token");
+            if (!token)
+                return redirectToLogin();
 
-        fetch("/auth/GetMe", {
-            method: "GET",
-            headers: {
-                "Authorization": token
-            }
-        }).then(res => {
-            if (!res.ok) {
-                return res.text().then(text => {
-                    throw new Error(text);
+            try {
+                const res = await fetch("/auth/GetMe", {
+                    method: "GET",
+                    headers: { "Authorization": token }
                 });
+                if (!res.ok)
+                    throw new Error(await res.text());
+
+                const { userName, roomName, userId } = await res.json();
+                setRoomName(roomName);
+                await startChat(userName, roomName, userId, token);
+            } catch (err) {
+                alert("Authentication failed: " + err.message);
+                redirectToLogin();
             }
-            return res.json();
-        }).then(data => {
-            setRoomName(data.roomName);
-            startChat(data.userName, data.roomName, data.userId, token);
-        }).catch(err => {
-            alert("Authentication failed: " + err.message);
-            return redirectToLogin();
-        });
 
-        input.addEventListener('keydown', function (e) {
-            if (e.key === 'Enter' && !e.shiftKey) {
-                e.preventDefault();
-                sendMessage();
-            }
-        });
-
-        focusOnElement(input);
-    })();
-
-    function redirectToLogin() {
-        window.location.href = "index.html";
-    }
-
-    function focusOnElement(element) {
-        if (element)
-            setTimeout(() => element.focus(), 0);
-    }
-
-    function setRoomName(roomName) {
-        const roomNameElement = document.getElementById('roomName');
-        roomNameElement.innerText = roomName;
-    }
-
-    function startChat(userName, roomName, userId, token) {
-        const connection = new signalR.HubConnectionBuilder()
-            .withUrl("/chathub", {
-                accessTokenFactory: () => token
-            })
-            .build();
-
-        connection.on("ReceiveMessage", (_userName, _message, _time, _userId) => {
-            const msgType = userId !== _userId ? 'theirs' : 'mine';
-            appendMessage(_userName, _message, _time, msgType);
-        });
-
-        connection.start()
-            .then(() => connection.invoke("JoinRoom", roomName))
-            .catch(err => {
-                alert("Connection failed: " + err.message);
+            input.addEventListener('keydown', function (e) {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    sendMessage();
+                }
             });
 
-        window.sendMessage = function () {   
-            const message = input.innerText.trim();
-            if (!message)
-                return;
+            input.addEventListener("input", saveRange);
 
-            const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-            
+            emojiPicker.addEventListener("click", e => {
+                e.stopPropagation();
+            });
+
+            emojiPicker.addEventListener("emoji-click", event => {
+                const emoji = event.detail.unicode;
+                insertEmojiAtCursor(emoji);
+            });
+
+            emojiBtn.addEventListener("click", (e) => {
+                e.stopPropagation();
+
+                if (isEmojiPanelOpen()) {
+                    removeEmojiPanel();
+                } else {
+                    input.blur();
+                    setTimeout(() => {
+                        showEmojiPicker();
+                    }, 100);
+                }
+            });
+
+            window.addEventListener("resize", () => {
+                removeEmojiPanel();
+            });
+
+            focusOnElement(input);
+        });
+
+        document.addEventListener("selectionchange", () => {
+            if (document.activeElement === input) {
+                saveRange();
+            }
+        });
+
+        async function startChat(userName, roomName, userId, token) {
+            connection = new signalR.HubConnectionBuilder()
+                .withUrl("/chathub", { accessTokenFactory: () => token })
+                .build();
+
+            connection.on("ReceiveMessage", (_userName, _message, _time, _userId) => {
+                const msgType = userId !== _userId ? 'theirs' : 'mine';
+                appendMessage(_userName, _message, _time, msgType);
+            });
+
             try {
-                connection.invoke("SendMessage", userName, message, time, roomName, userId);
+                await connection.start();
+                await connection.invoke("JoinRoom", roomName);
+            } catch (err) {
+                alert("Connection failed: " + err.message);
             }
-            catch (err) {
-                appendMessage(userName, message, time, 'mine-error');
-                alert("Send failed: " + err.message);
-            }
-            finally {
-                input.innerText = '';
-                focusOnElement(input);
+
+            window.sendMessage = function () {
+                const message = input.innerText.trim();
+                if (!message)
+                    return;
+
+                const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                connection.invoke("SendMessage", userName, message, time, roomName, userId)
+                    .catch(err => {
+                        appendMessage(userName, message, time, 'mine-error');
+                        alert("Send failed: " + err.message);
+                    })
+                    .finally(() => {
+                        if (isEmojiPanelOpen())
+                            removeSelection();
+                        input.innerText = '';
+                        //input.innerHTML = '';
+                        //savedRange = null;
+                    });
             }
         }
-    }
 
-    function appendMessage(userName, message, time, sender) {
-        const msg = document.createElement('div');
-        msg.className = `message ${sender}`;
-        msg.innerHTML = `<strong>${userName}</strong> <span class="time">[${time}]</span>: ${message}`;
-        chat.insertBefore(msg, chat.firstChild);
-        chat.scrollTop = chat.scrollHeight;
-    }
-</script>
+        function showEmojiPicker() {
+            if (!emojiPicker) return;
+
+            emojiPicker.style.display = "block";
+            emojiPicker.style.removeProperty("width");
+            emojiPicker.style.removeProperty("height");
+            emojiPicker.style.removeProperty("top");
+            emojiPicker.style.removeProperty("bottom");
+            emojiPicker.style.removeProperty("left");
+
+            if (isMobileView()) {
+                emojiPicker.style.position = "fixed";
+                emojiPicker.style.bottom = "0";
+                emojiPicker.style.left = "0";
+                emojiPicker.style.width = "100%";
+                emojiPicker.style.height = "300px";
+
+                document.body.classList.add("emoji-open");
+            } else {
+                emojiPicker.style.position = "absolute";
+                const rect = emojiBtn.getBoundingClientRect();
+                emojiPicker.style.left = `${rect.left}px`;
+                emojiPicker.style.top = `${rect.top - emojiPicker.offsetHeight - 8}px`;
+
+                document.body.classList.remove("emoji-open");
+            }
+
+            setTimeout(() => {
+                document.addEventListener("click", handleOutsideClick);
+            }, 0);
+        }
+
+        function removeEmojiPanel() {
+            emojiPicker.style.display = "none";
+            document.body.classList.remove("emoji-open");
+            document.removeEventListener("click", handleOutsideClick);
+        }
+
+        function handleOutsideClick(e) {
+            if (![emojiPicker, emojiBtn, sendBtn].some(el => el.contains(e.target))) {
+                removeEmojiPanel();
+            }
+        }
+        function redirectToLogin() {
+            window.location.href = "index.html";
+        }
+
+        function focusOnElement(element) {
+            if (element) setTimeout(() => element.focus(), 0);
+        }
+
+        function setRoomName(name) {
+            document.getElementById('roomName').innerText = name;
+        }
+
+        function isEmojiPanelOpen() {
+            return emojiPicker?.style?.display === "block" ||
+                document.body.classList.contains("emoji-open");
+        }
+
+        function isMobileView() {
+            return window.innerWidth < 768;
+        }
+
+        function removeSelection() {
+            const sel = window.getSelection();
+            if (sel && sel.rangeCount > 0) sel.removeAllRanges();
+        }
+
+        function appendMessage(userName, message, time, sender) {
+            const msg = document.createElement('div');
+            msg.className = `message ${sender}`;
+            msg.innerHTML = `<strong>${userName}</strong> <span class="time">[${time}]</span>: ${message}`;
+            chat.prepend(msg); //chat.insertBefore(msg, chat.firstChild);
+            chat.scrollTop = chat.scrollHeight;
+        }
+
+        function saveRange() {
+            const selection = window.getSelection();
+            if (!selection || selection.rangeCount === 0) return;
+            const range = selection.getRangeAt(0);
+            if (input.contains(range.commonAncestorContainer)) {
+                savedRange = range.cloneRange();
+            }
+        }
+
+        function insertEmojiAtCursor(emoji) {
+            const selection = window.getSelection();
+
+            if (savedRange) {
+                selection.removeAllRanges();
+                selection.addRange(savedRange);
+
+                const range = selection.getRangeAt(0);
+                range.deleteContents();
+                const textNode = document.createTextNode(emoji);
+                range.insertNode(textNode);
+                range.setStartAfter(textNode);
+                range.collapse(true);
+                savedRange = range.cloneRange();
+                selection.removeAllRanges();
+                selection.addRange(savedRange);
+            } else {
+                input.focus();
+                document.execCommand('insertText', false, emoji);
+            }
+        }
+    </script>
 </body>
 </html>
