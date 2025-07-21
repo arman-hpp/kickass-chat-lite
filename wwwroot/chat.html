@@ -78,7 +78,7 @@
             -ms-touch-action: pan-x pan-y;
             touch-action: pan-x pan-y;
             unicode-bidi: isolate;
-            direction: ltr; /*rtl*/
+            direction: ltr;
             width: 100%;
         }
 
@@ -177,7 +177,7 @@
             flex-direction: column-reverse;
             gap: 8px;
             width: 100%;
-            max-width: 800px;
+            max-width: 50%;
         }
 
         @media (max-width: 768px) {
@@ -345,12 +345,15 @@
 
     <script type="module">
         const chat = document.getElementById('chat');
-        const input = document.getElementById('messageInput');
+        const messageInput = document.getElementById('messageInput');
         const sendBtn = document.getElementById("sendBtn");
         const emojiBtn = document.getElementById("emojiBtn");
         const emojiPicker = document.getElementById("emojiPicker");
         let savedRange = null;
         let connection = null;
+        let _userName = null;
+        let _roomName = null;
+        let _userId = null;
 
         document.addEventListener('DOMContentLoaded', async () => {
             const token = localStorage.getItem("chat-token");
@@ -358,31 +361,36 @@
                 return redirectToLogin();
 
             try {
-                const res = await fetch("/auth/GetMe", {
+                const response = await fetch("/auth/GetMe", {
                     method: "GET",
                     headers: { "Authorization": token }
                 });
-                if (!res.ok)
-                    throw new Error(await res.text());
 
-                const { userName, roomName, userId } = await res.json();
+                if (!response.ok)
+                    throw new Error(await response.text());
+
+                const { userName, roomName, userId } = await response.json();
+                _userName = userName;
+                _roomName = roomName;
+                _userId = userId;
+
                 setRoomName(roomName);
-                await startChat(userName, roomName, userId, token);
+                await startChat(token);
             } catch (err) {
                 alert("Authentication failed: " + err.message);
                 redirectToLogin();
             }
 
-            input.addEventListener('keydown', function (e) {
+            messageInput.addEventListener('keydown', function (e) {
                 if (e.key === 'Enter' && !e.shiftKey) {
                     e.preventDefault();
                     sendMessage();
                 }
             });
 
-            input.addEventListener("input", saveRange);
+            messageInput.addEventListener("input", saveRange);
 
-            input.addEventListener('click', () => {
+            messageInput.addEventListener('click', () => {
                 if (isEmojiPanelOpen()) {
                     removeEmojiPanel();
                 }
@@ -417,53 +425,59 @@
                 }
             });
 
-            //window.addEventListener("resize", () => {
-            //    if (!isMobileView())
-            //        removeEmojiPanel();
-            //});
-
-            focusOnElement(input);
+            monitorKeyboardState();
+            focusOnElement(messageInput);
         });
 
         document.addEventListener("selectionchange", () => {
-            if (document.activeElement === input) {
+            if (document.activeElement === messageInput) {
                 saveRange();
             }
         });
 
-        async function startChat(userName, roomName, userId, token) {
-            connection = new signalR.HubConnectionBuilder()
-                .withUrl("/chathub", { accessTokenFactory: () => token })
-                .build();
-
-            connection.on("ReceiveMessage", (_userName, _message, _time, _userId) => {
-                const msgType = userId !== _userId ? 'theirs' : 'mine';
-                appendMessage(_userName, _message, _time, msgType);
-            });
-
+        async function startChat(token) {
             try {
+                connection = new signalR.HubConnectionBuilder()
+                    .withUrl("/chathub", { accessTokenFactory: () => token })
+                    .withAutomaticReconnect()
+                    .build();
+
+                connection.on("ReceiveMessage", (r_userName, r_message, r_time, r_userId) => {
+                    const msgType = _userId !== r_userId ? 'theirs' : 'mine';
+                    appendMessage(r_userName, r_message, r_time, msgType);
+                });
+
                 await connection.start();
-                await connection.invoke("JoinRoom", roomName);
+                await connection.invoke("JoinRoom", _roomName);
             } catch (err) {
-                alert("Connection failed: " + err.message);
+                console.error("Connection failed: " + err.message);
             }
+        }
 
-            window.sendMessage = function () {
-                const message = input.innerText.trim();
-                if (!message)
-                    return;
+        function sendMessage() {
+            const message = messageInput.innerText.trim();
+            if (!message) return;
 
-                const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-                connection.invoke("SendMessage", userName, message, time, roomName, userId)
+            if (sendBtn.disabled) return;
+            sendBtn.disabled = true;
+
+            const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+            if (connection && connection.state === signalR.HubConnectionState.Connected) {
+                connection.invoke("SendMessage", _userName, message, time, _roomName, _userId)
                     .catch(err => {
-                        appendMessage(userName, message, time, 'mine-error');
-                        alert("Send failed: " + err.message);
+                        appendMessage(_userName, message, time, 'mine-error');
+                        console.error("Send failed: " + err.message);
                     })
                     .finally(() => {
-                        if (isEmojiPanelOpen())
-                            removeSelection();
-                        input.innerHTML = '';
+                        if (isEmojiPanelOpen()) removeSelection();
+                        messageInput.innerHTML = '';
+                        setTimeout(() => sendBtn.disabled = false, 100);
                     });
+            } else {
+                appendMessage(_userName, message, time, 'mine-error');
+                console.error("Send failed: connection unavailable.");
+                setTimeout(() => sendBtn.disabled = false, 100);
             }
         }
 
@@ -504,7 +518,7 @@
         }
 
         function handleOutsideClick(e) {
-            if (![emojiPicker, emojiBtn, sendBtn, input].some(el => el.contains(e.target))) {
+            if (![emojiPicker, emojiBtn, sendBtn, messageInput].some(el => el.contains(e.target))) {
                 removeEmojiPanel();
             }
         }
@@ -538,8 +552,17 @@
         function appendMessage(userName, message, time, sender) {
             const msg = document.createElement('div');
             msg.className = `message ${sender}`;
-            msg.innerHTML = `<strong>${userName}</strong> <span class="time">[${time}]</span>: ${message}`;
-            chat.prepend(msg); //old: chat.insertBefore(msg, chat.firstChild);
+            //msg.innerHTML = `<strong>${userName}</strong> <span class="time">[${time}]</span>: ${message}`;
+            msg.innerHTML = '';
+            const name = document.createElement('strong');
+            name.textContent = `${userName} `;
+            const timeSpan = document.createElement('span');
+            timeSpan.className = 'time';
+            timeSpan.textContent = `[${time}]`;
+            const content = document.createTextNode(`: ${message}`);
+            msg.append(name, timeSpan, content);
+
+            chat.prepend(msg);
             chat.scrollTop = chat.scrollHeight;
         }
 
@@ -547,7 +570,7 @@
             const selection = window.getSelection();
             if (!selection || selection.rangeCount === 0) return;
             const range = selection.getRangeAt(0);
-            if (input.contains(range.commonAncestorContainer)) {
+            if (messageInput.contains(range.commonAncestorContainer)) {
                 savedRange = range.cloneRange();
             }
         }
@@ -567,14 +590,24 @@
                 selection.removeAllRanges();
                 selection.addRange(savedRange);
             } else {
-                input.focus();
-                document.execCommand('insertText', false, emoji);
+                console.log("savedRange missed.");
+                focusOnElement(messageInput);
+                const range = document.createRange();
+                range.selectNodeContents(messageInput);
+                range.collapse(false);
+                const textNode = document.createTextNode(emoji);
+                range.insertNode(textNode);
+                range.setStartAfter(textNode);
+                range.collapse(true);
+                selection.removeAllRanges();
+                selection.addRange(range);
+                savedRange = range.cloneRange();
             }
         }
 
-        (function () {
+        function monitorKeyboardState() {
             if (!window.visualViewport) {
-                console.warn("visualViewport not supported on this browser");
+                console.warn("Property window.visualViewport not supported on this browser");
                 return;
             }
 
@@ -589,22 +622,25 @@
                 const widthChanged = currVVWidth !== lastVVWidth;
                 const heightChanged = currVVHeight !== lastVVHeight;
 
+                const heightRatio = heightDiff / lastVVHeight;
+
                 if (widthChanged) {
-                    console.log("✅ Real resize (orientation or layout change)");
+                    console.log("Orientation changed or layout resized.");
                     removeEmojiPanel();
-                } else if (heightChanged && heightDiff > 100) {
-                    console.log("🟡 Likely keyboard opened (height dropped significantly)");
-                } else if (heightChanged && heightDiff < -100) {
-                    console.log("🟢 Likely keyboard closed (height increased)");
+                } else if (heightChanged) {
+                    if (heightRatio >= 0.25) {
+                        console.log("Keyboard opened.");
+                    } else if (heightRatio < -0.25) {
+                        console.log("Keyboard closed.");
+                    }
                 } else {
-                    console.log("🟡 Minor viewport shift, ignoring...");
+                    console.log("Minor viewport shifted.");
                 }
 
                 lastVVWidth = currVVWidth;
                 lastVVHeight = currVVHeight;
             });
-        })();
-
+        }
     </script>
 </body>
 </html>
