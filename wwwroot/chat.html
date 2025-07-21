@@ -7,8 +7,8 @@
     <meta http-equiv="Pragma" content="no-cache" />
     <meta http-equiv="Expires" content="0" />
     <title>Kickass Chat</title>
-    <script src="signalr.min.js"></script>
-    <script type="module" src="https://cdn.jsdelivr.net/npm/emoji-picker-element@^1/index.js"></script>
+    <script src="/libs/signalr/signalr.min.js"></script>
+    <script type="module" src="libs/emoji-picker-element/index.js"></script>
     <style type="text/css">
         * {
             box-sizing: border-box;
@@ -302,12 +302,22 @@
             margin-bottom: 300px;
         }
 
-        emoji-picker#emojiPicker {
+        .emoji-picker {
             z-index: 999;
             border-top: 1px solid #ccc;
             box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
             background-color: white;
+            position: absolute;
+            bottom: 60px;
+            right: 12px;
+            display: none;
         }
+
+        .emoji-btn {
+            font-size: 18px;
+            padding: 0 8px;
+        }
+
     </style>
 </head>
 <body>
@@ -335,9 +345,9 @@
         </main>
         <footer class="footer">
             <div class="chat-input-wrapper">
-                <button id="emojiBtn" style="font-size: 20px; padding: 0 8px;">😊</button>
+                <button id="emojiBtn" class="emoji-btn">😊</button>
                 <div id="messageInput" contenteditable="true" placeholder="Write your message" class="editable"></div>
-                <emoji-picker id="emojiPicker" style="position: absolute; bottom: 60px; right: 12px; display: none; z-index: 999;"></emoji-picker>
+                <emoji-picker id="emojiPicker" class="emoji-picker"></emoji-picker>
                 <button id="sendBtn">Send</button>
             </div>
         </footer>
@@ -466,17 +476,22 @@
             if (connection && connection.state === signalR.HubConnectionState.Connected) {
                 connection.invoke("SendMessage", _userName, message, time, _roomName, _userId)
                     .catch(err => {
-                        appendMessage(_userName, message, time, 'mine-error');
                         console.error("Send failed: " + err.message);
+                        appendMessage(_userName, message, time, 'mine-error');
                     })
                     .finally(() => {
-                        if (isEmojiPanelOpen()) removeSelection();
+                        if (isEmojiPanelOpen()) {
+                            removeSelection();
+                        }
                         messageInput.innerHTML = '';
+                        if (document.activeElement !== messageInput) {
+                            focusOnElement(messageInput);
+                        }
                         setTimeout(() => sendBtn.disabled = false, 100);
                     });
             } else {
-                appendMessage(_userName, message, time, 'mine-error');
                 console.error("Send failed: connection unavailable.");
+                appendMessage(_userName, message, time, 'mine-error');
                 setTimeout(() => sendBtn.disabled = false, 100);
             }
         }
@@ -553,7 +568,7 @@
             const msg = document.createElement('div');
             msg.className = `message ${sender}`;
             //msg.innerHTML = `<strong>${userName}</strong> <span class="time">[${time}]</span>: ${message}`;
-            msg.innerHTML = '';
+            //msg.innerHTML = '';
             const name = document.createElement('strong');
             name.textContent = `${userName} `;
             const timeSpan = document.createElement('span');
@@ -628,10 +643,13 @@
                     console.log("Orientation changed or layout resized.");
                     removeEmojiPanel();
                 } else if (heightChanged) {
+                    if (!isMobileView()) {
+                        removeEmojiPanel();
+                    }
                     if (heightRatio >= 0.25) {
-                        console.log("Keyboard opened.");
+                        console.log("Keyboard opened. heightRatio: " + heightRatio);
                     } else if (heightRatio < -0.25) {
-                        console.log("Keyboard closed.");
+                        console.log("Keyboard closed. heightRatio: " + heightRatio);
                     }
                 } else {
                     console.log("Minor viewport shifted.");
