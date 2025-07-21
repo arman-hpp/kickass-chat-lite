@@ -387,8 +387,8 @@
                 setRoomName(roomName);
                 await startChat(token);
             } catch (err) {
-                alert("Authentication failed: " + err.message);
-                redirectToLogin();
+                console.error("Authentication failed: " + err.message);
+                return redirectToLogin();
             }
 
             messageInput.addEventListener('keydown', function (e) {
