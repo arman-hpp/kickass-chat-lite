@@ -417,6 +417,7 @@
 
             emojiBtn.addEventListener("click", (e) => {
                 e.stopPropagation();
+                e.preventDefault();
                 if (isEmojiPanelOpen()) {
                     removeEmojiPanel();
                 } else {
@@ -425,6 +426,7 @@
             });
 
             sendBtn.addEventListener("click", (e) => {
+                e.stopPropagation();
                 e.preventDefault();
                 sendMessage();
             });

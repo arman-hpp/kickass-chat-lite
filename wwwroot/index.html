@@ -94,8 +94,16 @@
             });
         });
 
+        roomNameInput.addEventListener('keydown', function (e) {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                login();
+            }
+        });
+
         submitBtn.addEventListener("click", (e) => {
             e.stopPropagation();
+            e.preventDefault();
             login();
         });
 
