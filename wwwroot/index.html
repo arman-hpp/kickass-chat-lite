@@ -74,75 +74,79 @@
     </style>
 </head>
 <body>
-    <div class="container">
-        <h2>Kickass Chat Login</h2>
-        <input type="text" id="userName" placeholder="User Name" maxlength="16" />
-        <input type="text" id="roomName" placeholder="Room Name" autocapitalize="off" maxlength="16" />
-        <button id="submitBtn">Login</button>
-        <div id="errorBox" class="alert"></div>
-    </div>
+<div class="container">
+    <h2>Kickass Chat Login</h2>
+    <input type="text" id="userName" placeholder="User Name" maxlength="16" />
+    <input type="text" id="roomName" placeholder="Room Name" autocapitalize="off" maxlength="16" />
+    <button id="submitBtn">Login</button>
+    <div id="errorBox" class="alert"></div>
+</div>
 <script type="module">
     const userNameInput = document.getElementById("userName");
     const roomNameInput = document.getElementById("roomName");
     const submitBtn = document.getElementById("submitBtn");
     const errorBox = document.getElementById("errorBox");
-
-    document.addEventListener('DOMContentLoaded', async () => {
+    
+    document.addEventListener('DOMContentLoaded', () => {
         document.querySelectorAll("input").forEach(input => {
             input.addEventListener("input", () => {
-                errorBox.style.display = 'none';
+                hideError();
             });
         });
-
+    
         roomNameInput.addEventListener('keydown', function (e) {
             if (e.key === 'Enter' && !e.shiftKey) {
                 e.preventDefault();
                 login();
             }
         });
-
-        submitBtn.addEventListener("click", (e) => {
-            e.stopPropagation();
+    
+        submitBtn.addEventListener("click", async (e) => {
             e.preventDefault();
-            login();
+            await login();
         });
-
+    
         focusOnElement(userNameInput);
     });
-
+    
     function showError(err, element) {
         errorBox.style.display = 'block';
         errorBox.textContent = err;
         focusOnElement(element);
     }
-
-    function focusOnElement(element) {
-        if (element)
-            setTimeout(() => element.focus(), 0);
+    
+    function hideError() {
+        errorBox.style.display = "none";
     }
-
+    
+    function focusOnElement(element) {
+        if (element) {
+            setTimeout(() => element.focus(), 0);
+        }
+    }
+    
     async function login() {
-        const username = userNameInput.value.trim();
-        if (!username)
-            return showError("Please enter User Name.", userNameInput);
-
+        const userName = userNameInput.value.trim();
+        if (!userName)
+            return showError("Please enter User name.", userNameInput);
+    
         const roomName = roomNameInput.value.trim();
         if (!roomName)
-            return showError("Please enter Room Name.", roomNameInput);
-
+            return showError("Please enter Room name.", roomNameInput);
+    
         try {
             const response = await fetch("/auth/Login", {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ userName: username, roomName: roomName })
+                body: JSON.stringify({ userName, roomName })
             });
-
+    
             if (!response.ok)
                 throw new Error(await response.text());
-
+    
             const { token } = await response.json();
             localStorage.setItem("chat-token", token);
-            window.location.href = "chat.html?timestamp=" + new Date().getTime();
+            window.location.href = `chat.html?timestamp=${Date.now()}`;
         } catch (err) {
             console.error("Login failed: " + err.message);
             showError(err.message);
